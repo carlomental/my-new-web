@@ -1,0 +1,316 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AB Designing Hub - Dashboard</title>
+
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            min-height:80vh;
+            background: linear-gradient(135deg, #0443f1, #243b55);
+            color: white;
+            padding: 30px 15px;
+        }
+
+        /* Dashboard Container */
+
+        .dashboard {
+            margin: 50px auto;
+            padding: 55px;
+            max-width: 8000px;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            text-align: left;
+        }
+
+        /* Logo */
+
+        .logo {
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #86b9c7, #088d04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            font-size: 25px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        h1 {
+            color: #00c6ff;
+            margin-bottom: 12px;
+        }
+
+        .welcome-text {
+            color: #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        /* User Photo */
+
+        .my-photo {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            margin: 15px auto;
+            display: block;
+        }
+
+        /* Buttons */
+
+        button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.5s;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 6, 14, 0.4);
+        }
+
+        .open-btn {
+            margin-top: 20px;
+        }
+
+        .logout-btn {
+            margin-top: 25px;
+            background: #e63946;
+        }
+
+        /* Document Viewer */
+
+        #document-viewer {
+            display: none;
+            margin-top: 30px;
+            background: #172b45;
+            border: 1px solid #344d6b;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        #document-viewer h2 {
+            background: linear-gradient(135deg, #0072ff, #00c6ff);
+            color: white;
+            padding: 18px;
+            font-size: 20px;
+        }
+
+        /* PDF Text Area */
+
+        #pdf-text {
+            background: rgba(4, 195, 243, 0.753);
+            color: #fffdfd;
+            padding: 25px;
+            min-height: 200px;
+            max-height: 450px;
+            overflow-y: auto;
+            text-align: left;
+            white-space: pre-wrap;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+
+        .close-btn {
+            margin: 15px;
+        }
+
+        /* Mobile Responsive */
+
+        @media (max-width: 600px) {
+
+            .dashboard {
+                padding: 25px 18px;
+                margin: 20px auto;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+
+            #pdf-text {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <div class="logo">AB</div>
+
+        <h1>Welcome!</h1>
+
+        <p class="welcome-text">
+            Welcome to Your new journey
+        </p>
+
+        <!-- User Email -->
+
+        <h3 id="userEmail"></h3>
+
+        <!-- User Photo -->
+
+        <img src="images/mypic.jpg" class="my-photo" alt="My Photo">
+
+        <!-- Open PDF Button -->
+
+        <button class="open-btn" onclick="openDocument()">
+            Open Here
+        </button>
+
+        <!-- PDF Document Viewer -->
+
+        <div id="document-viewer">
+
+            <h2>My Document</h2>
+
+            <div id="pdf-text">
+                Your document will appear here.
+            </div>
+
+            <button class="close-btn" onclick="closeDocument()">
+                Close Document
+            </button>
+
+        </div>
+
+        <!-- Logout Button -->
+
+        <button class="logout-btn" onclick="logout()">
+            Logout
+        </button>
+
+    </div>
+
+
+    <script>
+
+        // Display User Email
+
+        const params = new URLSearchParams(window.location.search);
+
+        const email = params.get("email");
+
+        document.getElementById("userEmail").textContent =
+            email || "Guest";
+
+
+        // Open PDF Document
+
+        async function openDocument() {
+
+            const viewer = document.getElementById("document-viewer");
+
+            const textBox = document.getElementById("pdf-text");
+
+            viewer.style.display = "block";
+
+            textBox.textContent = "Loading Document...";
+
+            viewer.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+            try {
+
+                const response = await fetch("documents/mydocument.pdf");
+
+                if (!response.ok) {
+                    throw new Error("PDF file not found");
+                }
+
+                const pdfData = await response.arrayBuffer();
+
+                const pdf = await pdfjsLib.getDocument({
+                    data: pdfData
+                }).promise;
+
+                let fullText = "";
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+
+                    const page = await pdf.getPage(i);
+
+                    const content = await page.getTextContent();
+
+                    fullText +=
+                        "PAGE " + i + "\n\n" +
+                        content.items.map(item => item.str).join(" ") +
+                        "\n\n--------------------------------\n\n";
+
+                }
+
+                textBox.textContent = fullText || "No readable text found in this PDF.";
+
+            }
+
+            catch (error) {
+
+                textBox.textContent =
+                    "Unable to open PDF. Please check your PDF file and folder name.";
+
+                console.error(error);
+
+            }
+
+        }
+
+
+        // Close PDF Document
+
+        function closeDocument() {
+
+            document.getElementById("document-viewer").style.display = "none";
+
+        }
+
+
+        // Logout Function
+
+        function logout() {
+
+            window.location.href = "index.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>
+```
